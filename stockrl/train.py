@@ -7,7 +7,7 @@ import pandas as pd
 
 from stockrl.config import DataConfig, EnvConfig, FeatureConfig, TrainConfig
 from stockrl.data_loader import download_price_data, split_by_time
-from stockrl.evaluate import evaluate_policy_model
+from stockrl.evaluate import evaluate_policy_run
 from stockrl.features import apply_scaler, build_features, fit_scaler
 from stockrl.trading_env import TradingEnv
 
@@ -20,17 +20,27 @@ def train_agent(
     model_out: str | Path | None = None,
 ):
     """Train a PPO agent on the train split and report validation metrics."""
+    train_frame, validation_frame, _ = prepare_frames(
+        data_config=data_config,
+        feature_config=feature_config,
+    )
+    model, validation_artifacts = train_agent_on_frames(
+        train_frame=train_frame,
+        validation_frame=validation_frame,
+        feature_config=feature_config,
+        env_config=env_config,
+        train_config=train_config,
+        model_out=model_out,
+    )
+    return model, validation_artifacts.summary
+
+
+def prepare_frames(
+    data_config: DataConfig | None = None,
+    feature_config: FeatureConfig | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     dataset_config = data_config or DataConfig()
     indicator_config = feature_config or FeatureConfig()
-    market_config = env_config or EnvConfig()
-    learning_config = train_config or TrainConfig()
-
-    try:
-        from stable_baselines3 import PPO
-    except ImportError as exc:
-        raise ImportError(
-            "stable-baselines3 is required for training. Install project dependencies first."
-        ) from exc
 
     raw_prices = download_price_data(
         ticker=dataset_config.ticker,
@@ -50,9 +60,45 @@ def train_agent(
         splits.test,
         indicator_config,
     )[:2]
+    test_frame = prepare_splits_for_model(
+        splits.train,
+        splits.validation,
+        splits.test,
+        indicator_config,
+    )[2]
+    return train_frame, validation_frame, test_frame
+
+
+def train_agent_on_frames(
+    train_frame: pd.DataFrame,
+    validation_frame: pd.DataFrame,
+    feature_config: FeatureConfig | None = None,
+    env_config: EnvConfig | None = None,
+    train_config: TrainConfig | None = None,
+    model_out: str | Path | None = None,
+):
+    indicator_config = feature_config or FeatureConfig()
+    market_config = env_config or EnvConfig()
+    learning_config = train_config or TrainConfig()
+
+    try:
+        from stable_baselines3 import PPO
+    except ImportError as exc:
+        raise ImportError(
+            "stable-baselines3 is required for training. Install project dependencies first."
+        ) from exc
 
     env = TradingEnv(train_frame, feature_config=indicator_config, env_config=market_config)
-    model = PPO("MlpPolicy", env, verbose=0, seed=learning_config.random_seed)
+    model = PPO(
+        "MlpPolicy",
+        env,
+        verbose=0,
+        seed=learning_config.random_seed,
+        learning_rate=learning_config.learning_rate,
+        n_steps=learning_config.n_steps,
+        batch_size=learning_config.batch_size,
+        ent_coef=learning_config.ent_coef,
+    )
     model.learn(total_timesteps=learning_config.total_timesteps)
 
     if model_out is not None:
@@ -60,14 +106,13 @@ def train_agent(
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model.save(str(model_path))
 
-    validation_summary = evaluate_policy_model(
+    validation_artifacts = evaluate_policy_run(
         model=model,
         frame=validation_frame,
         feature_config=indicator_config,
         env_config=market_config,
     )
-
-    return model, validation_summary
+    return model, validation_artifacts
 
 
 def prepare_splits_for_model(
@@ -93,6 +138,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--end", type=str, default=None, help="End date for downloads.")
     parser.add_argument("--model-out", type=str, default="artifacts/ppo_spy.zip")
     parser.add_argument("--timesteps", type=int, default=20_000)
+    parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument("--learning-rate", type=float, default=0.0003)
+    parser.add_argument("--n-steps", type=int, default=256)
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--ent-coef", type=float, default=0.01)
     return parser
 
 
@@ -101,7 +151,14 @@ def main() -> None:
     args = parser.parse_args()
 
     data_config = DataConfig(ticker=args.ticker, start=args.start, end=args.end)
-    train_config = TrainConfig(total_timesteps=args.timesteps)
+    train_config = TrainConfig(
+        total_timesteps=args.timesteps,
+        random_seed=args.seed,
+        learning_rate=args.learning_rate,
+        n_steps=args.n_steps,
+        batch_size=args.batch_size,
+        ent_coef=args.ent_coef,
+    )
 
     _, validation_summary = train_agent(
         data_config=data_config,

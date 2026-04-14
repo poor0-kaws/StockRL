@@ -41,3 +41,21 @@ def test_split_by_time_keeps_strict_order_with_no_overlap() -> None:
     assert len(splits.test) == 2
     assert splits.train["date"].max() < splits.validation["date"].min()
     assert splits.validation["date"].max() < splits.test["date"].min()
+
+
+def test_normalize_price_frame_accepts_yfinance_multiindex_columns() -> None:
+    frame = pd.DataFrame(
+        {
+            ("Date", ""): pd.date_range("2024-01-01", periods=2, freq="D"),
+            ("Open", "SPY"): [10.0, 11.0],
+            ("High", "SPY"): [10.5, 11.5],
+            ("Low", "SPY"): [9.5, 10.5],
+            ("Close", "SPY"): [10.2, 11.2],
+            ("Volume", "SPY"): [100, 120],
+        }
+    )
+
+    normalized = normalize_price_frame(frame)
+
+    assert list(normalized.columns) == ["date", "open", "high", "low", "close", "volume"]
+    assert len(normalized) == 2

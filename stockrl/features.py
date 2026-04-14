@@ -23,8 +23,13 @@ def build_features(
     featured = frame.copy()
 
     close = featured["close"]
+    high = featured["high"]
+    low = featured["low"]
+    volume = featured["volume"]
+    previous_close = close.shift(1)
 
     featured["daily_return"] = close.pct_change().fillna(0.0)
+    featured["volume_change"] = volume.pct_change().fillna(0.0)
     featured[f"rsi_{feature_config.rsi_window}"] = compute_rsi(close, feature_config.rsi_window)
 
     ema_fast = close.ewm(span=feature_config.macd_fast_window, adjust=False).mean()
@@ -52,6 +57,32 @@ def build_features(
         min_periods=feature_config.volatility_window,
     ).std()
     featured["momentum_5"] = close.pct_change(periods=feature_config.momentum_window)
+
+    true_range = pd.concat(
+        [
+            high - low,
+            (high - previous_close).abs(),
+            (low - previous_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    atr = true_range.rolling(
+        window=feature_config.atr_window,
+        min_periods=feature_config.atr_window,
+    ).mean()
+    featured[f"atr_{feature_config.atr_window}_pct"] = atr / close
+
+    rolling_high = close.rolling(
+        window=feature_config.regime_window,
+        min_periods=feature_config.regime_window,
+    ).max()
+    rolling_low = close.rolling(
+        window=feature_config.regime_window,
+        min_periods=feature_config.regime_window,
+    ).min()
+    featured[f"distance_from_high_{feature_config.regime_window}"] = (close / rolling_high) - 1.0
+    featured[f"distance_from_low_{feature_config.regime_window}"] = (close / rolling_low) - 1.0
+    featured["regime_above_sma_50"] = (close > featured["sma_50"]).astype(float)
 
     featured = featured.replace([np.inf, -np.inf], np.nan)
     featured = featured.dropna().reset_index(drop=True)

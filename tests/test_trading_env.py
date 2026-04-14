@@ -17,6 +17,7 @@ def make_feature_frame() -> pd.DataFrame:
             "close": [10.0, 12.0, 11.0],
             "volume": [100, 100, 100],
             "daily_return": [0.0, 0.01, -0.01],
+            "volume_change": [0.0, 0.0, 0.0],
             "rsi_14": [50.0, 55.0, 45.0],
             "macd": [0.1, 0.2, 0.1],
             "macd_signal": [0.1, 0.15, 0.12],
@@ -27,6 +28,10 @@ def make_feature_frame() -> pd.DataFrame:
             "sma_gap_pct": [0.02, 0.05, 0.07],
             "volatility_20": [0.1, 0.1, 0.1],
             "momentum_5": [0.0, 0.03, 0.01],
+            "atr_14_pct": [0.01, 0.01, 0.01],
+            "distance_from_high_20": [-0.02, 0.0, -0.04],
+            "distance_from_low_20": [0.02, 0.05, 0.03],
+            "regime_above_sma_50": [1.0, 1.0, 1.0],
         }
     )
 
@@ -46,7 +51,9 @@ def test_env_uses_next_bar_execution_and_reward_matches_portfolio_delta() -> Non
     assert terminated is False
     assert info["index"] == 1
     assert info["position"] == 1
-    assert reward == pytest.approx(100.0 * ((12.0 / 11.0) - 1.0))
+    expected_return = (100.0 * (12.0 / 11.0) / 100.0) - 1.0
+    expected_reward = expected_return - env.env_config.trade_penalty
+    assert reward == pytest.approx(expected_reward)
 
 
 def test_env_terminates_on_last_tradable_step() -> None:

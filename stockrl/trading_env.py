@@ -58,6 +58,7 @@ class TradingEnv(gym.Env[np.ndarray, int]):
 
         self.current_index = 0
         self.state = make_initial_state(self.env_config.initial_cash)
+        self.peak_portfolio_value = self.env_config.initial_cash
 
     def reset(
         self,
@@ -68,6 +69,7 @@ class TradingEnv(gym.Env[np.ndarray, int]):
         super().reset(seed=seed)
         self.current_index = 0
         self.state = make_initial_state(self.env_config.initial_cash)
+        self.peak_portfolio_value = self.env_config.initial_cash
         observation = self._build_observation(self.current_index)
         info = self._build_info()
         return observation, info
@@ -93,7 +95,8 @@ class TradingEnv(gym.Env[np.ndarray, int]):
             fee_rate=self.env_config.fee_rate,
         )
 
-        reward = float(self.state.portfolio_value - previous_value)
+        self.peak_portfolio_value = max(self.peak_portfolio_value, self.state.portfolio_value)
+        portfolio_return = (self.state.portfolio_value / previous_value) - 1.0
         self.current_index = next_index
         terminated = self.current_index >= len(self.frame) - 1
         truncated = False
@@ -105,11 +108,20 @@ class TradingEnv(gym.Env[np.ndarray, int]):
 
         info = self._build_info()
         info["last_action"] = int(action)
-        info["reward"] = reward
         info["execution_price"] = execution_price
         info["mark_price"] = mark_price
         info["previous_position"] = int(previous_position)
         info["executed_trade"] = previous_position != self.state.position
+        info["portfolio_return"] = float(portfolio_return)
+        drawdown = 0.0
+        if self.peak_portfolio_value > 0:
+            drawdown = (self.peak_portfolio_value - self.state.portfolio_value) / self.peak_portfolio_value
+        trade_penalty = self.env_config.trade_penalty if info["executed_trade"] else 0.0
+        drawdown_penalty = self.env_config.drawdown_penalty * drawdown
+        reward = float(portfolio_return - trade_penalty - drawdown_penalty)
+        info["trade_penalty"] = float(trade_penalty)
+        info["drawdown_penalty"] = float(drawdown_penalty)
+        info["reward"] = reward
         return observation, reward, terminated, truncated, info
 
     def _build_observation(self, index: int) -> np.ndarray:

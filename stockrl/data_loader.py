@@ -43,7 +43,11 @@ def normalize_price_frame(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Price data is empty.")
 
     normalized = frame.copy()
+    normalized.columns = flatten_columns(normalized.columns)
     normalized.columns = [str(column).strip().lower() for column in normalized.columns]
+
+    if "datetime" in normalized.columns and "date" not in normalized.columns:
+        normalized = normalized.rename(columns={"datetime": "date"})
 
     missing_columns = [column for column in REQUIRED_COLUMNS if column not in normalized.columns]
     if missing_columns:
@@ -65,6 +69,27 @@ def normalize_price_frame(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("Price data contains missing numeric values.")
 
     return normalized
+
+
+def flatten_columns(columns) -> list[str]:
+    """Flatten yfinance-style MultiIndex columns into plain names."""
+    flattened: list[str] = []
+
+    for column in columns:
+        if isinstance(column, tuple):
+            parts = [str(part).strip() for part in column if str(part).strip()]
+            if not parts:
+                flattened.append("")
+                continue
+
+            # yfinance often returns columns like ("Open", "SPY").
+            # We want the price field, not the ticker symbol.
+            flattened.append(parts[0])
+            continue
+
+        flattened.append(str(column).strip())
+
+    return flattened
 
 
 def split_by_time(

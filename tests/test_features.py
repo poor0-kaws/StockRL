@@ -28,6 +28,7 @@ def test_build_features_creates_stable_feature_columns() -> None:
 
     assert list(config.feature_columns) == [
         "daily_return",
+        "volume_change",
         "rsi_14",
         "macd",
         "macd_signal",
@@ -38,6 +39,10 @@ def test_build_features_creates_stable_feature_columns() -> None:
         "sma_gap_pct",
         "volatility_20",
         "momentum_5",
+        "atr_14_pct",
+        "distance_from_high_20",
+        "distance_from_low_20",
+        "regime_above_sma_50",
     ]
     assert not features.loc[:, list(config.feature_columns)].isna().any().any()
 

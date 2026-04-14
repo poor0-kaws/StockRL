@@ -55,6 +55,7 @@ def test_ma_crossover_curve_stays_above_zero() -> None:
             "close": [10.0, 12.0, 11.0, 14.0],
             "volume": [1, 1, 1, 1],
             "daily_return": [0.0, 0.2, -0.08, 0.27],
+            "volume_change": [0.0, 0.0, 0.0, 0.0],
             "rsi_14": [50.0, 55.0, 45.0, 60.0],
             "macd": [0.0, 0.1, 0.1, 0.2],
             "macd_signal": [0.0, 0.05, 0.08, 0.15],
@@ -65,6 +66,10 @@ def test_ma_crossover_curve_stays_above_zero() -> None:
             "sma_gap_pct": [-0.1, 0.05, 0.07, 0.18],
             "volatility_20": [0.1, 0.1, 0.1, 0.1],
             "momentum_5": [0.0, 0.0, 0.0, 0.0],
+            "atr_14_pct": [0.01, 0.01, 0.01, 0.01],
+            "distance_from_high_20": [-0.05, 0.0, -0.08, 0.0],
+            "distance_from_low_20": [0.0, 0.2, 0.1, 0.4],
+            "regime_above_sma_50": [0.0, 1.0, 1.0, 1.0],
         }
     )
 
@@ -83,6 +88,7 @@ def test_evaluate_policy_run_collects_trade_log() -> None:
             "close": [10.0, 12.0, 11.0],
             "volume": [1, 1, 1],
             "daily_return": [0.0, 0.2, -0.08],
+            "volume_change": [0.0, 0.0, 0.0],
             "rsi_14": [50.0, 60.0, 40.0],
             "macd": [0.0, 0.1, 0.0],
             "macd_signal": [0.0, 0.05, 0.02],
@@ -93,6 +99,10 @@ def test_evaluate_policy_run_collects_trade_log() -> None:
             "sma_gap_pct": [0.12, 0.11, 0.05],
             "volatility_20": [0.1, 0.1, 0.1],
             "momentum_5": [0.0, 0.0, 0.0],
+            "atr_14_pct": [0.01, 0.01, 0.01],
+            "distance_from_high_20": [0.0, 0.0, -0.08],
+            "distance_from_low_20": [0.0, 0.2, 0.1],
+            "regime_above_sma_50": [1.0, 1.0, 1.0],
         }
     )
 

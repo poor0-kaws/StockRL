@@ -76,6 +76,28 @@ What evaluation now gives you:
 - a performance plot image
 - a trade log CSV
 
+## Better results workflow
+
+If you want a fairer test, do not trust one lucky run.
+Run several seeds and compare them in one CSV:
+
+```bash
+python -m stockrl.experiments --ticker SPY --start 2012-01-01 --end 2024-12-31 --timesteps 50000 --seeds 1,7,42,123 --output-dir artifacts/experiments
+```
+
+This now does four useful things:
+
+- trains multiple PPO runs
+- compares test performance across seeds
+- saves one `experiment_results.csv`
+- saves the plot and trade log for the best validation run
+
+The reward is also smarter now:
+
+- it rewards percentage portfolio growth
+- it subtracts a small penalty for each trade
+- it subtracts a small penalty when the portfolio falls far below its own peak
+
 ## What the agent can do
 
 The action space is intentionally tiny:

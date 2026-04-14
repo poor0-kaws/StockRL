@@ -15,6 +15,7 @@ class DataConfig:
 @dataclass(frozen=True)
 class FeatureConfig:
     rsi_window: int = 14
+    atr_window: int = 14
     macd_fast_window: int = 12
     macd_slow_window: int = 26
     macd_signal_window: int = 9
@@ -22,10 +23,12 @@ class FeatureConfig:
     sma_long_window: int = 50
     volatility_window: int = 20
     momentum_window: int = 5
+    regime_window: int = 20
     scale_features: bool = True
     feature_columns: tuple[str, ...] = field(
         default=(
             "daily_return",
+            "volume_change",
             "rsi_14",
             "macd",
             "macd_signal",
@@ -36,6 +39,10 @@ class FeatureConfig:
             "sma_gap_pct",
             "volatility_20",
             "momentum_5",
+            "atr_14_pct",
+            "distance_from_high_20",
+            "distance_from_low_20",
+            "regime_above_sma_50",
         )
     )
 
@@ -44,10 +51,15 @@ class FeatureConfig:
 class EnvConfig:
     initial_cash: float = 10_000.0
     fee_rate: float = 0.001
+    trade_penalty: float = 0.0005
+    drawdown_penalty: float = 0.05
 
 
 @dataclass(frozen=True)
 class TrainConfig:
     total_timesteps: int = 20_000
     random_seed: int = 7
-
+    learning_rate: float = 0.0003
+    n_steps: int = 256
+    batch_size: int = 64
+    ent_coef: float = 0.01
