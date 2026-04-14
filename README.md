@@ -65,8 +65,16 @@ python -m stockrl.train --ticker SPY --start 2012-01-01 --end 2024-12-31
 Evaluate a saved model:
 
 ```bash
-python -m stockrl.evaluate --ticker SPY --start 2012-01-01 --end 2024-12-31 --model-path artifacts/ppo_spy.zip
+python -m stockrl.evaluate --ticker SPY --start 2012-01-01 --end 2024-12-31 --model-path artifacts/ppo_spy.zip --plot-out artifacts/performance.png --trade-log-out artifacts/trade_log.csv
 ```
+
+What evaluation now gives you:
+
+- a text summary for the RL agent
+- a `buy-and-hold` comparison
+- a simple `moving-average crossover` baseline
+- a performance plot image
+- a trade log CSV
 
 ## What the agent can do
 

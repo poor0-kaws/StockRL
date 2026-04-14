@@ -79,6 +79,7 @@ class TradingEnv(gym.Env[np.ndarray, int]):
         if not self.action_space.contains(action):
             raise ValueError(f"Unknown action: {action}")
 
+        previous_position = self.state.position
         next_index = self.current_index + 1
         execution_price = float(self.frame.loc[next_index, "open"])
         mark_price = float(self.frame.loc[next_index, "close"])
@@ -105,6 +106,10 @@ class TradingEnv(gym.Env[np.ndarray, int]):
         info = self._build_info()
         info["last_action"] = int(action)
         info["reward"] = reward
+        info["execution_price"] = execution_price
+        info["mark_price"] = mark_price
+        info["previous_position"] = int(previous_position)
+        info["executed_trade"] = previous_position != self.state.position
         return observation, reward, terminated, truncated, info
 
     def _build_observation(self, index: int) -> np.ndarray:
