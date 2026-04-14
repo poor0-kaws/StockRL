@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stockrl"
+version = "0.1.0"
+description = "A small, readable reinforcement learning project for trading SPY."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "gymnasium>=0.29,<1.1",
+  "numpy>=1.26,<3.0",
+  "pandas>=2.2,<3.0",
+  "stable-baselines3>=2.3,<3.0",
+  "yfinance>=0.2.54,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["stockrl*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "smoke: marks the tiny end-to-end pipeline test",
+]
